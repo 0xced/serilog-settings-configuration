@@ -141,7 +141,7 @@ The `MinimumLevel` configuration property can be set to a single value as in the
 
 This is useful in ASP.NET Core applications, which will often specify minimum level as:
 
-```json
+```yaml
 "MinimumLevel": {
     "Default": "Information",
     "Override": {
@@ -206,7 +206,7 @@ LoggingLevelSwitch controlSwitch = allSwitches["$controlSwitch"];
 
 These sections support simplified syntax, for example the following is valid if no arguments are needed by the sinks:
 
-```json
+```yaml
 "WriteTo": [ "Console", "DiagnosticTrace" ]
 ```
 
@@ -310,7 +310,7 @@ Some Serilog packages require a reference to a logger configuration object. The 
       }
     ]
   }
-},
+}
 ```
 
 ## Arguments binding
@@ -359,7 +359,7 @@ If parameter type is an interface or an abstract class you need to specify the f
 "Destructure": [
     { "Name": "With", "Args": { "policy": "Sample.CustomPolicy, Sample" } },
     ...
-],
+]
 ```
 
 ### IConfiguration parameter
