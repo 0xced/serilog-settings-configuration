@@ -6,4 +6,5 @@ interface IConfigurationReader : ILoggerSettings
 {
     void ApplySinks(LoggerSinkConfiguration loggerSinkConfiguration);
     void ApplyEnrichment(LoggerEnrichmentConfiguration loggerEnrichmentConfiguration);
+    void ApplyBinding(object instance);
 }

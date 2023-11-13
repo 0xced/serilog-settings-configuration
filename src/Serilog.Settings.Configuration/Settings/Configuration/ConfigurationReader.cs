@@ -283,6 +283,11 @@ class ConfigurationReader : IConfigurationReader
         CallConfigurationMethods(methodCalls, FindEventEnricherConfigurationMethods(_configurationAssemblies, _resolutionContext.ReaderOptions.AllowInternalTypes, _resolutionContext.ReaderOptions.AllowInternalMethods), loggerEnrichmentConfiguration);
     }
 
+    void IConfigurationReader.ApplyBinding(object instance)
+    {
+        _section.Bind(instance, _resolutionContext.ReaderOptions.BinderOptions);
+    }
+
     void ApplyEnrichment(LoggerConfiguration loggerConfiguration)
     {
         var enrichDirective = _section.GetSection("Enrich");

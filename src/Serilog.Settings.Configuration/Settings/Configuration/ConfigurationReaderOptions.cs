@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reflection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyModel;
 using Serilog.Core;
 
@@ -81,6 +82,12 @@ public sealed class ConfigurationReaderOptions
     /// Called when a log filter switch is created while reading the <c>Serilog:FilterSwitches</c> section of the configuration.
     /// </summary>
     public Action<string, ILoggingFilterSwitch>? OnFilterSwitchCreated { get; init; }
+
+    /// <summary>
+    /// Controls how the binding is performed for sinks that provide an <see cref="Action{T1}"/> to configure its options (such as <c>Serilog.Sinks.OpenTelemetry</c>).
+    /// Defaults to setting <see cref="BinderOptions.ErrorOnUnknownConfiguration"/> to <see langword="true"/>.
+    /// </summary>
+    public Action<BinderOptions>? BinderOptions { get; init; } = options => options.ErrorOnUnknownConfiguration = true;
 
     internal Assembly[]? Assemblies { get; }
     internal DependencyContext? DependencyContext { get; }
