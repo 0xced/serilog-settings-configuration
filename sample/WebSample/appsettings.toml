@@ -1,0 +1,53 @@
+[Serilog]
+Enrich = [ "FromLogContext", "WithThreadId", "WithProcessId" ]
+
+[Serilog.LevelSwitches]
+Default = 'Information'
+
+[Serilog.MinimumLevel]
+ControlledBy = '$Default'
+
+[Serilog.MinimumLevel.Override]
+"Microsoft" = 'Information'
+# Disabling the default ASP.NET Core request logging since Serilog is used instead (app.UseSerilogRequestLogging())
+"Microsoft.AspNetCore.Hosting.Diagnostics" = 'Error'
+
+[Serilog.FilterSwitches]
+filter1 = "RequestPath is null or RequestPath <> '/logs/test' or StartsWith(SourceContext, 'WebSample')"
+filter2 = "true"
+filter3 = "true"
+
+[[Serilog.Filter]]
+Name = "ControlledBy"
+Args = { switch = "$filter1" }
+
+[[Serilog.Filter]]
+Name = "ControlledBy"
+Args = { switch = "$filter2" }
+
+[[Serilog.Filter]]
+Name = "ControlledBy"
+Args = { switch = "$filter3" }
+
+[Serilog.WriteTo.ConsoleSink]
+Name = 'Console'
+Args = { outputTemplate = '[{Timestamp:HH:mm:ss} {Level}] {SourceContext}{NewLine}   ╰─⫸  {Message:lj}{NewLine}{Exception}' }
+
+[Serilog.WriteTo.FileSink]
+Name = 'File'
+Args = { path = 'logs.txt', rollingInterval = 'Day' }
+
+# See live logs with https://github.com/couchcoding/Logbert or https://github.com/dabeku/Loginator
+# On Linux or macOS see live logs in a terminal with `nc -ul 7071`
+[Serilog.WriteTo.UdpSink]
+Name = 'Udp'
+Args = { remoteAddress = 'localhost', remotePort = 7071, family = 'InterNetwork', formatter = 'Serilog.Formatting.Log4Net.Log4NetTextFormatter::Log4JFormatter, Serilog.Formatting.Log4Net' }
+
+# If neither Logbert nor Loginator are available, just open notepad.exe
+#[Serilog.WriteTo.NotepadSink]
+#Name = 'Notepad'
+
+# For Windows only, throws PlatformNotSupportedException otherwise
+#[Serilog.WriteTo.EventLogSink]
+#Name = 'EventLog'
+#Args = { source = 'WebSample', manageEventSource = true, restrictedToMinimumLevel = 'Warning' }
