@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29709.97
@@ -41,6 +41,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\ci.yml = .github\workflows\ci.yml
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Issue321", "test\Issue321\Issue321.csproj", "{A7974D29-D106-46E5-928A-5D69198CF57B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -65,6 +67,10 @@ Global
 		{B7CF5068-DD19-4868-A268-5280BDE90361}.Release|Any CPU.Build.0 = Release|Any CPU
 		{1B6E08F3-16C9-4912-BEEE-57DB78C92A12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{1B6E08F3-16C9-4912-BEEE-57DB78C92A12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7974D29-D106-46E5-928A-5D69198CF57B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7974D29-D106-46E5-928A-5D69198CF57B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7974D29-D106-46E5-928A-5D69198CF57B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7974D29-D106-46E5-928A-5D69198CF57B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -76,6 +82,7 @@ Global
 		{B7CF5068-DD19-4868-A268-5280BDE90361} = {D551DCB0-7771-4D01-BEBD-F7B57D1CF0E3}
 		{1B6E08F3-16C9-4912-BEEE-57DB78C92A12} = {D551DCB0-7771-4D01-BEBD-F7B57D1CF0E3}
 		{391B84C5-A7BA-4BE1-95A0-E459FA61D971} = {21A409AD-2C11-41A8-88C8-360062EA8E48}
+		{A7974D29-D106-46E5-928A-5D69198CF57B} = {D551DCB0-7771-4D01-BEBD-F7B57D1CF0E3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {485F8843-42D7-4267-B5FB-20FE9181DEE9}
