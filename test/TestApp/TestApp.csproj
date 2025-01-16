@@ -11,8 +11,6 @@
     <UseCurrentRuntimeIdentifier>true</UseCurrentRuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <!-- Ignore vulnerable (framework) packages; this app is not published. -->
-    <NoWarn>NU1902;NU1903</NoWarn>
   </PropertyGroup>
 
   <ItemGroup Condition="$(Configuration) == 'Debug'">
