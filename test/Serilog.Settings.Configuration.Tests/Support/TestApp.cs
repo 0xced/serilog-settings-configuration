@@ -5,6 +5,7 @@ using CliWrap;
 using CliWrap.Exceptions;
 using FluentAssertions;
 using Polly;
+using Polly.Retry;
 using Xunit.Abstractions;
 using Xunit.Sdk;
 using static Serilog.Settings.Configuration.Tests.Support.PublishModeExtensions;
@@ -33,8 +34,20 @@ public class TestApp : IAsyncLifetime
     {
         // Retry 3 times because pack / restore / publish may try to access the same files across different target frameworks and fail with System.IO.IOException:
         // The process cannot access the file [Serilog.Settings.Configuration.deps.json or Serilog.Settings.Configuration.dll] because it is being used by another process.
-        var retryPolicy = Policy.Handle<CommandExecutionException>().RetryAsync(3);
-        await retryPolicy.ExecuteAsync(CreateTestAppAsync);
+        var options = new RetryStrategyOptions
+        {
+            MaxRetryAttempts = 3,
+            OnRetry = arguments =>
+            {
+                if (arguments.Outcome.Exception != null)
+                {
+                    _messageSink.OnMessage(new DiagnosticMessage($"🔁 {arguments.Outcome.Exception.Message}"));
+                }
+                return ValueTask.CompletedTask;
+            },
+        };
+        var resiliencePipeline = new ResiliencePipelineBuilder().AddRetry(options).Build();
+        await resiliencePipeline.ExecuteAsync(CreateTestAppAsync, CancellationToken.None);
     }
 
     Task IAsyncLifetime.DisposeAsync()
@@ -45,21 +58,21 @@ public class TestApp : IAsyncLifetime
 
     public string GetExecutablePath(PublishMode publishMode) => _executables[publishMode].FullName;
 
-    async Task CreateTestAppAsync()
+    async ValueTask CreateTestAppAsync(CancellationToken cancellationToken)
     {
         // It might be tempting to do pack -> restore -> build --no-restore -> publish --no-build (and parallelize over publish modes)
         // But this would fail because of https://github.com/dotnet/sdk/issues/17526 and probably because of other unforeseen bugs
         // preventing from running multiple `dotnet publish` commands with different parameters.
 
-        await PackAsync();
-        await RestoreAsync();
+        await PackAsync(cancellationToken);
+        await RestoreAsync(cancellationToken);
         foreach (var publishMode in GetPublishModes())
         {
-            await PublishAsync(publishMode);
+            await PublishAsync(publishMode, cancellationToken);
         }
     }
 
-    async Task PackAsync()
+    async Task PackAsync(CancellationToken cancellationToken)
     {
         var projectFile = GetFile("src", "Serilog.Settings.Configuration", "Serilog.Settings.Configuration.csproj");
         var packArgs = new[] {
@@ -68,10 +81,10 @@ public class TestApp : IAsyncLifetime
             "--output", _workingDirectory.FullName,
             "-p:Version=0.0.0-IntegrationTest.0",
         };
-        await RunDotnetAsync(_workingDirectory, packArgs);
+        await RunDotnetAsync(_workingDirectory, packArgs, cancellationToken);
     }
 
-    async Task RestoreAsync()
+    async Task RestoreAsync(CancellationToken cancellationToken)
     {
         // Can't use "--source . --source https://api.nuget.org/v3/index.json" because of https://github.com/dotnet/sdk/issues/27202 => a nuget.config file is used instead.
         // It also has the benefit of using settings _only_ from the specified config file, ignoring the global nuget.config where package source mapping could interfere with the local source.
@@ -81,17 +94,17 @@ public class TestApp : IAsyncLifetime
             "-p:Configuration=Release",
             $"-p:TargetFramework={TargetFramework}",
         };
-        await RunDotnetAsync(_workingDirectory, restoreArgs);
+        await RunDotnetAsync(_workingDirectory, restoreArgs, cancellationToken);
     }
 
-    async Task PublishAsync(PublishMode publishMode)
+    async Task PublishAsync(PublishMode publishMode, CancellationToken cancellationToken)
     {
         var publishDirectory = _workingDirectory.SubDirectory("publish");
         var fodyWeaversXml = _workingDirectory.File("FodyWeavers.xml");
 
         var outputDirectory = publishDirectory.SubDirectory(publishMode.ToString());
 
-        File.WriteAllText(fodyWeaversXml.FullName, publishMode == PublishMode.SingleFile && IsDesktop ? "<Weavers><Costura/></Weavers>" : "<Weavers/>");
+        await File.WriteAllTextAsync(fodyWeaversXml.FullName, publishMode == PublishMode.SingleFile && IsDesktop ? "<Weavers><Costura/></Weavers>" : "<Weavers/>", cancellationToken);
 
         var publishArgsBase = new[] {
             "publish",
@@ -104,7 +117,7 @@ public class TestApp : IAsyncLifetime
         var publishSingleFile = $"-p:PublishSingleFile={publishMode is PublishMode.SingleFile or PublishMode.SelfContained}";
         var selfContained = $"-p:SelfContained={publishMode is PublishMode.SelfContained}";
         var publishArgs = (IsDesktop ? publishArgsBase.Append(autoGenerateBindingRedirects) : publishArgsBase.Append(publishSingleFile).Append(selfContained)).ToArray();
-        await RunDotnetAsync(_workingDirectory, publishArgs);
+        await RunDotnetAsync(_workingDirectory, publishArgs, cancellationToken);
 
         var executableFileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "TestApp.exe" : "TestApp";
         var executableFile = new FileInfo(Path.Combine(outputDirectory.FullName, executableFileName));
@@ -123,10 +136,10 @@ public class TestApp : IAsyncLifetime
         _executables[publishMode] = executableFile;
     }
 
-    async Task RunDotnetAsync(DirectoryInfo workingDirectory, params string[] arguments)
+    async Task RunDotnetAsync(DirectoryInfo workingDirectory, string[] arguments, CancellationToken cancellationToken)
     {
-        _messageSink.OnMessage(new DiagnosticMessage($"cd {workingDirectory}"));
-        _messageSink.OnMessage(new DiagnosticMessage($"dotnet {string.Join(" ", arguments)}"));
+        _messageSink.OnMessage(new DiagnosticMessage($"📁 {workingDirectory}"));
+        _messageSink.OnMessage(new DiagnosticMessage($"🛠️ dotnet {string.Join(" ", arguments)}"));
         var outBuilder = new StringBuilder();
         var errBuilder = new StringBuilder();
         var command = Cli.Wrap("dotnet")
@@ -144,7 +157,7 @@ public class TestApp : IAsyncLifetime
                 _messageSink.OnMessage(new DiagnosticMessage($"==> err: {line}"));
             }));
 
-        var result = await command.ExecuteAsync();
+        var result = await command.ExecuteAsync(cancellationToken);
         if (result.ExitCode != 0)
         {
             throw new CommandExecutionException(command, result.ExitCode, $"An unexpected exception has occurred while running {command}{Environment.NewLine}{errBuilder}{outBuilder}".Trim());
