@@ -20,7 +20,9 @@ class StringArgumentValue : ConfigurationArgumentValue
     static readonly Dictionary<Type, Func<string, object>> ExtendedTypeConversions = new Dictionary<Type, Func<string, object>>
         {
             { typeof(Uri), s => new Uri(s) },
+#if !NET7_0_OR_GREATER
             { typeof(TimeSpan), s => TimeSpan.Parse(s) },
+#endif
             { typeof(Type), s => Type.GetType(s, throwOnError:true)! },
         };
 
@@ -153,6 +155,14 @@ class StringArgumentValue : ConfigurationArgumentValue
                 return ctor.Invoke(call);
             }
         }
+
+#if NET7_0_OR_GREATER
+        var parse = toType.GetMethod(nameof(IParsable<int>.Parse), BindingFlags.Public | BindingFlags.Static, [typeof(string), typeof(IFormatProvider)]);
+        if (parse != null && toType.IsAssignableTo(typeof(IParsable<>).MakeGenericType(toType)))
+        {
+            return parse.Invoke(null, [argumentValue, resolutionContext.ReaderOptions.FormatProvider]);
+        }
+#endif
 
         return Convert.ChangeType(argumentValue, toType, resolutionContext.ReaderOptions.FormatProvider);
     }
